@@ -15,6 +15,11 @@
 
 #define PADDING                  10
 
+@interface MWPhotoBrowser () <UIImagePickerControllerDelegate, UINavigationControllerDelegate> {
+    
+}
+@end
+
 static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 @implementation MWPhotoBrowser
@@ -66,6 +71,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _previousPageIndex = NSUIntegerMax;
     _currentVideoIndex = NSUIntegerMax;
     _displayActionButton = YES;
+    _displayAddPhotoButton = YES;
     _displayNavArrows = NO;
     _zoomPhotosToFill = YES;
     _performingLayout = NO; // Reset on view did appear
@@ -179,7 +185,10 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     if (self.displayActionButton) {
         _actionButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionButtonPressed:)];
     }
-    
+    if (self.displayAddPhotoButton) {
+        _addPhotoButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(addPhotoButtonPressed:)];
+    }
+
     // Update
     [self reloadData];
     
@@ -255,6 +264,13 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [items addObject:_previousButton];
         [items addObject:flexSpace];
         [items addObject:_nextButton];
+        [items addObject:flexSpace];
+    }
+    if (_addPhotoButton) {
+        [items addObject:flexSpace];
+        [items addObject:flexSpace];
+        [items addObject:_addPhotoButton];
+        [items addObject:flexSpace];
         [items addObject:flexSpace];
     } else {
         [items addObject:flexSpace];
@@ -1578,6 +1594,11 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 #pragma mark - Actions
 
+- (void)addPhotoButtonPressed:(id)sender {
+    NSLog(@"addPhotoButtonPressed !!! show a ImagePicker");
+    [self pickPhoto];
+}
+
 - (void)actionButtonPressed:(id)sender {
 
     // Only react when image has loaded
@@ -1664,6 +1685,31 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [self.progressHUD hide:YES];
     }
     self.navigationController.navigationBar.userInteractionEnabled = YES;
+}
+
+- (void)pickPhoto {
+    UIImagePickerController *picker=[[UIImagePickerController alloc] init];
+    picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+    picker.delegate = self;
+    
+    [self presentViewController:picker animated:YES completion:nil];
+}
+
+- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info{
+    UIImage *pickedPhoto = [info objectForKey:UIImagePickerControllerOriginalImage];
+    // TODO: Do something with this photo: send to Parse.
+    //NSLog(@"Do something with this photo: %s", pickedPhoto);
+    if ([_delegate respondsToSelector:@selector(photoBrowser:didAddPhoto:)])
+    [_delegate photoBrowser:self didAddPhoto:pickedPhoto];
+    
+    
+    [picker dismissViewControllerAnimated:YES completion:^{
+    }];
+}
+
+- (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker{
+    [picker dismissViewControllerAnimated:YES completion:^{
+    }];
 }
 
 @end
